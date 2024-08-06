@@ -30,6 +30,7 @@ var fake_orbit_editor_original_position: Vector3 = Vector3.ZERO
 @onready var game_camera: Camera3D = get_parent().get_node("GameCamera")
 @export var disable_distance_culling: bool = false
 var original_clickbox_radius: float = 0
+var draw: Draw3D
 
 func _ready():
 	on_data_changed()
@@ -40,8 +41,20 @@ func _ready():
 	
 	if get_node_or_null("CameraClickbox"):
 		original_clickbox_radius = $CameraClickbox/CollisionShape3D.shape.radius
+		
+	draw = Draw3D.new()
+	draw.name = "DRAW_NODE"
+	add_child(draw)
 	
 func _process(delta):
+	if !Engine.is_editor_hint():
+		draw.clear()
+		draw.rotation = -rotation
+		
+		if Input.is_action_just_pressed("toggle_icon_visibility"):
+			if get_node_or_null("Icon"):
+				$Icon.fixed_size = !$Icon.fixed_size
+	
 	previous_position = position
 	
 	if !Engine.is_editor_hint() && !unmoving:
@@ -72,6 +85,9 @@ func _process(delta):
 		
 		# Set position based on orbit (this is only in the 2D plane for now).
 		position = fake_orbit_around.position + Vector3(cos(deg_to_rad(fake_orbit_angle)), 0, sin(deg_to_rad(fake_orbit_angle))) * fake_orbit_distance
+		
+		if !Engine.is_editor_hint():
+			draw.circle_XZ(fake_orbit_around.position - position, fake_orbit_distance, Color.WHITE)
 	
 	if (!Engine.is_editor_hint() || rotate_in_editor) && rotate_planet:
 		rotation_degrees.y += rotation_speed * delta * 60
@@ -79,12 +95,11 @@ func _process(delta):
 	if !Engine.is_editor_hint():
 		if position.distance_to(game_camera.position) > 10 && !disable_distance_culling:
 			for child in get_children():
-				if child is MeshInstance3D:
+				if child is MeshInstance3D && child.name != "DRAW_NODE":
 					child.visible = false
 		else:
 			for child in get_children():
-				if child is MeshInstance3D:
-					child.visible = true
+				child.visible = true
 		
 		if get_node_or_null("CameraClickbox"):
 			$CameraClickbox/CollisionShape3D.shape.radius = clamp(original_clickbox_radius * (position.distance_to(game_camera.position) / 2), original_clickbox_radius, 9999999)

@@ -6,6 +6,7 @@ var speed_multiplier = 0.01
 
 func _ready():
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	far = 99999
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
